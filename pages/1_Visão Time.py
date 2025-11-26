@@ -33,7 +33,7 @@ TEAM_LOGOS = {
 }
 consistent_blue = '#1f77b4' # Tom de azul consistente para os gráficos
 # Mantenha o caminho original, mas adicione uma nota de aviso
-FILE_PATH = r'C:\Users\Alan\Desktop\cbf_data\df.xlsx' 
+FILE_PATH = 'df.xlsx' 
 
 def format_metric_value_inline(total, detail_c, detail_f, color='gray', emoji=''):
     """Retorna o HTML formatado para o valor total e o detalhe C/F ao lado, mais limpo."""
