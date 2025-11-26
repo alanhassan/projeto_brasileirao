@@ -7,7 +7,7 @@ import os
 st.set_page_config(layout="wide", page_title="🏆 Visão Ranking - Classificação Detalhada")
 
 # --- Variáveis Globais (INCLUÍDAS NOVAMENTE PARA ESTA PÁGINA) ---
-FILE_PATH = r'C:\Users\Alan\Desktop\cbf_data\df.xlsx' 
+FILE_PATH = 'df.xlsx' 
 
 # Dicionário de Logos dos Times (REPLICADO DA PÁGINA "VISÃO TIME")
 TEAM_LOGOS = {
