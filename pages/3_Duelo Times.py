@@ -50,6 +50,52 @@ def load_data(file_path):
     except Exception as e:
         st.error(f"Erro ao carregar ou processar os dados do Excel: {e}. Verifique a estrutura do arquivo.")
         return pd.DataFrame()
+    
+# --- NOVO: Função para Desempenho Recente ---
+def get_recent_performance(df, team_name, local_filter=None, n_games=3):
+    """
+    Calcula o desempenho nos últimos N jogos, com filtro opcional por Local.
+    Retorna um dicionário com V, E, D, Pts, AP e uma lista com os resultados (V/E/D).
+    """
+    # 1. Filtra os jogos onde o time é Time1 (Time1 foi padronizado para o time em foco)
+    df_team = df[(df['Time1'] == team_name)].copy()
+    df_team.drop_duplicates(subset=['Ordem_Jogo'], keep='first', inplace=True)
+
+    # 2. Aplica filtro de Local
+    if local_filter:
+        df_team = df_team[df_team['Local'] == local_filter]
+        
+    # 3. Ordena e pega os N jogos mais recentes
+    # 'Ordem_Jogo' é a chave para o mais recente (maior valor)
+    df_recent = df_team.sort_values(by='Ordem_Jogo', ascending=False).head(n_games)
+
+    if df_recent.empty:
+        return {'V': 0, 'E': 0, 'D': 0, 'P': 0, 'AP': 0.0, 'Results': []}
+
+    total_games = len(df_recent)
+    
+    # 4. Resultados V/E/D
+    results_count = df_recent['Resultado'].value_counts().to_dict()
+    victories = results_count.get('V', 0)
+    draws = results_count.get('E', 0)
+    defeats = results_count.get('D', 0)
+    
+    # 5. Pontos e Aproveitamento
+    total_points = (victories * 3) + (draws * 1)
+    aproveitamento = (total_points / (total_games * 3)) * 100 if total_games > 0 else 0
+    
+    # 6. Lista dos resultados (para exibição)
+    results_list = df_recent['Resultado'].tolist() # Lista de ['V', 'E', 'D']
+
+    return {
+        'V': victories,
+        'E': draws,
+        'D': defeats,
+        'P': total_points,
+        'AP': aproveitamento,
+        'Results': results_list
+    }
+
 
 # --- Funções de Cálculo (Reutilizada da página anterior) ---
 
@@ -94,6 +140,9 @@ def calculate_team_metrics(df, team_name, local_filter=None):
     
     results_count = df_team['Resultado'].value_counts().to_dict()
 
+    # NOVO: Cálculo do Desempenho Recente
+    recent_performance = get_recent_performance(df, team_name, local_filter=local_filter, n_games=3)
+
     return {
         'P': total_points,
         'J': total_games,
@@ -105,7 +154,8 @@ def calculate_team_metrics(df, team_name, local_filter=None):
         'SG': df_team['Saldo_Jogo'].sum(),
         'AP': aproveitamento,
         'GPJ': gols_por_jogo,
-        'PPJ': pontos_por_jogo
+        'PPJ': pontos_por_jogo,
+        'RECENT': recent_performance
     }
 
 def create_ranking_dataframe(df, all_teams):
@@ -183,6 +233,42 @@ def display_metrics(metrics, current_pos, df_head_to_head):
         """, 
         unsafe_allow_html=True
     )
+
+    st.markdown("---")
+    # 2. NOVO: Exibição do Desempenho Recente
+    recent = metrics['RECENT']
+    
+    num_recent_games = len(recent['Results'])
+    st.markdown(f"#### Desempenho nos Últimos {num_recent_games} Jogos:")
+    
+    # Aproveitamento Recente
+    st.markdown(f"**Aproveitamento:** **{recent['AP']:.1f}%**")
+
+    # Contagem de V/E/D Recente
+    st.markdown(
+        f"""
+        <span style="color: {green_hex};"><b>{recent['V']} V</b></span>,
+        <span style="color: {black_hex};"><b>{recent['E']} E</b></span>,
+        <span style="color: {red_hex};"><b>{recent['D']} D</b></span>
+        """,
+        unsafe_allow_html=True
+    )
+    
+    # Sequência de Resultados (Visual)
+    # Usamos pequenos círculos ou quadrados coloridos
+    result_emojis = {
+        'V': f'<span style="color: {green_hex}; font-size: 20px;">\u25CF</span>', # Círculo Verde
+        'E': f'<span style="color: #6c757d; font-size: 20px;">\u25CF</span>', # Círculo Cinza (Empate)
+        'D': f'<span style="color: {red_hex}; font-size: 20px;">\u25CF</span>' # Círculo Vermelho
+    }
+    
+    # Inverte a lista para exibir do mais antigo para o mais recente para melhor leitura horizontal
+    results_html = " ".join([result_emojis.get(r, '⚪') for r in recent['Results'][::-1]])
+    st.markdown(f"**Sequência:** {results_html} (Antigo -> Recente)", unsafe_allow_html=True)
+
+
+    st.markdown("---")
+
     # Resultados entre os times
     if not df_head_to_head.empty:
         st.markdown(f"#### Histórico de Jogos Contra o Adversário:")
