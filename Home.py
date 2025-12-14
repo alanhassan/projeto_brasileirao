@@ -16,3 +16,7 @@ st.markdown("""
 * **🏆 Visão Ranking:** Classificação atual dos times, com indicadores de performance e filtros de local de jogo (casa/ fora).
 * **⚔️ Duelo Times:** Indicadores dos times selecionados e resultados do 1º e 2º Turno entre os mesmos. 
 """)
+
+
+# --- Rodapé ---
+st.markdown("<br><hr><p style='text-align: center; color: gray;'>Dashboard de Análise de Performance | Autoria de Alan W. Hassan</p>", unsafe_allow_html=True)

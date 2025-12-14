@@ -394,3 +394,7 @@ with col_display_t2:
     display_metrics(metrics_t2_away, pos_t2, 
                     df_head_to_head[(df_head_to_head['Time1'] == team2_name) | 
                                     (df_head_to_head['Time2'] == team2_name)])
+    
+
+# --- Rodapé ---
+st.markdown("<br><hr><p style='text-align: center; color: gray;'>Dashboard de Análise de Performance | Autoria de Alan W. Hassan</p>", unsafe_allow_html=True)

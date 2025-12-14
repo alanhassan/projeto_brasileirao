@@ -302,3 +302,7 @@ st.markdown("""
 * **GPJ:** **Gols por Jogo** ($\t{GM} / \t{Jogos}$).
 * **Aprv. (%):** Aproveitamento em Pontos.
 """)
+
+
+# --- Rodapé ---
+st.markdown("<br><hr><p style='text-align: center; color: gray;'>Dashboard de Análise de Performance | Autoria de Alan W. Hassan</p>", unsafe_allow_html=True)
