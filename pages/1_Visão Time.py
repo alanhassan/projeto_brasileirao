@@ -33,7 +33,7 @@ TEAM_LOGOS = {
 }
 consistent_blue = '#1f77b4' # Tom de azul consistente para os gráficos
 # Mantenha o caminho original, mas adicione uma nota de aviso
-FILE_PATH = 'df.xlsx' 
+FILE_PATH = 'df_final.xlsx' 
 
 def format_metric_value_inline(total, detail_c, detail_f, color='gray', emoji=''):
     """Retorna o HTML formatado para o valor total e o detalhe C/F ao lado, mais limpo."""
@@ -236,22 +236,33 @@ if df.empty:
 st.title("⚽ Análise de Performance dos Times")
 st.markdown("---") # Linha mais limpa após o título
 
-# Lista de times únicos a partir de Time1 e Time2
-all_teams = pd.unique(df[['Time1', 'Time2']].values.ravel('K'))
-all_teams.sort()
-
-# Container para o Selectbox para melhor alinhamento
+# Container para os Selectboxes
 with st.container():
-    col_sel_title, col_sel = st.columns([1, 4])
-    with col_sel_title:
-        st.subheader("Time Selecionado:")
-    with col_sel:
-        selected_team = st.selectbox(
-            "Selecione o Time para Análise:",
-            all_teams,
-            index=0,
-            label_visibility="collapsed" # Esconde o label duplicado
-        )
+    col_sel_team, col_sel_year = st.columns([2, 1])
+    
+    with col_sel_team:
+        all_teams = pd.unique(df[['Time1', 'Time2']].values.ravel('K'))
+        all_teams.sort()
+        selected_team = st.selectbox("Selecione o Time:", all_teams)
+
+    with col_sel_year:
+        # Extrai anos únicos da coluna 'Ano'
+        all_years = sorted(df['Ano'].unique().tolist(), reverse=True)
+        selected_year = st.selectbox("Selecione o Ano:", all_years)
+
+
+# # Container para o Selectbox para melhor alinhamento
+# with st.container():
+#     col_sel_title, col_sel = st.columns([1, 4])
+#     with col_sel_title:
+#         st.subheader("Time Selecionado:")
+#     with col_sel:
+#         selected_team = st.selectbox(
+#             "Selecione o Time para Análise:",
+#             all_teams,
+#             index=0,
+#             label_visibility="collapsed" # Esconde o label duplicado
+#         )
 
 # NOVO: Define o URL do logo
 current_logo_url = TEAM_LOGOS.get(
@@ -261,8 +272,7 @@ current_logo_url = TEAM_LOGOS.get(
 
 # --- Filtragem e Preparação dos Dados do Time ---
 # Filtra os dados onde o time selecionado está na coluna Time1 (assumindo que o dataframe já está preparado para isso)
-df_team = df[(df['Time1'] == selected_team)].copy()
-# Remove duplicatas se houver, garantindo que cada jogo apareça apenas uma vez para o time selecionado.
+df_team = df[(df['Time1'] == selected_team) & (df['Ano'] == selected_year)].copy() # Remove duplicatas se houver, garantindo que cada jogo apareça apenas uma vez para o time selecionado.
 df_team.drop_duplicates(subset=['Ordem_Jogo'], keep='first', inplace=True) 
 df_team.sort_values(by='Ordem_Jogo', inplace=True) # Garantir a ordem cronológica
 
