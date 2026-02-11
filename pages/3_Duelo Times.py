@@ -7,7 +7,7 @@ import os
 st.set_page_config(layout="wide", page_title="⚔️ Duelo Times - Análise Comparativa")
 
 # --- Variáveis Globais (Ajuste o caminho se necessário) ---
-FILE_PATH = 'df.xlsx' 
+FILE_PATH = 'df_final.xlsx' 
 
 # Dicionário de Logos dos Times (REPLICADO)
 TEAM_LOGOS = {
