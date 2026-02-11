@@ -247,7 +247,7 @@ with st.container():
 
     with col_sel_year:
         # Extrai anos únicos da coluna 'Ano'
-        all_years = sorted(df['Ano'].unique().tolist(), reverse=True)
+        all_years = sorted(df['ano'].unique().tolist(), reverse=True)
         selected_year = st.selectbox("Selecione o Ano:", all_years)
 
 
@@ -272,7 +272,7 @@ current_logo_url = TEAM_LOGOS.get(
 
 # --- Filtragem e Preparação dos Dados do Time ---
 # Filtra os dados onde o time selecionado está na coluna Time1 (assumindo que o dataframe já está preparado para isso)
-df_team = df[(df['Time1'] == selected_team) & (df['Ano'] == selected_year)].copy() # Remove duplicatas se houver, garantindo que cada jogo apareça apenas uma vez para o time selecionado.
+df_team = df[(df['Time1'] == selected_team) & (df['ano'] == selected_year)].copy() # Remove duplicatas se houver, garantindo que cada jogo apareça apenas uma vez para o time selecionado.
 df_team.drop_duplicates(subset=['Ordem_Jogo'], keep='first', inplace=True) 
 df_team.sort_values(by='Ordem_Jogo', inplace=True) # Garantir a ordem cronológica
 
