@@ -29,7 +29,12 @@ TEAM_LOGOS = {
     'Atlético Mineiro Saf': 'https://upload.wikimedia.org/wikipedia/commons/thumb/5/5f/Atletico_mineiro_galo.png/250px-Atletico_mineiro_galo.png',
     'Santos Fc': 'https://upload.wikimedia.org/wikipedia/commons/thumb/3/35/Santos_logo.svg/1045px-Santos_logo.svg.png',
     'Fluminense': 'https://upload.wikimedia.org/wikipedia/commons/thumb/1/12/Fluminense_Football_Club.svg/250px-Fluminense_Football_Club.svg.png',
-    'Vitória': 'https://upload.wikimedia.org/wikipedia/commons/thumb/5/58/Esporte_Clube_Vit%C3%B3ria.png/640px-Esporte_Clube_Vit%C3%B3ria.png'
+    'Vitória': 'https://upload.wikimedia.org/wikipedia/commons/thumb/5/58/Esporte_Clube_Vit%C3%B3ria.png/640px-Esporte_Clube_Vit%C3%B3ria.png',
+    'Chapecoense': 'https://upload.wikimedia.org/wikipedia/commons/thumb/6/61/S%C3%ADmbolo_Chapecoense_sem_estrelas.svg/640px-S%C3%ADmbolo_Chapecoense_sem_estrelas.svg.png',
+    'Athletico Paranaense': 'https://upload.wikimedia.org/wikipedia/commons/thumb/4/43/Athletico_Paranaense_%28Logo_2019%29.svg/640px-Athletico_Paranaense_%28Logo_2019%29.svg.png',
+    'Vasco da Gama Saf': 'https://upload.wikimedia.org/wikipedia/commons/thumb/1/1c/Escudo_Vasco_1920.png/640px-Escudo_Vasco_1920.png',
+    'Coritiba S.a.f.': 'https://upload.wikimedia.org/wikipedia/commons/thumb/b/bd/Coritiba_Foot_Ball_Club_logo.svg/640px-Coritiba_Foot_Ball_Club_logo.svg.png',
+    'Remo': 'https://upload.wikimedia.org/wikipedia/commons/thumb/7/70/Clube_do_Remo.svg/640px-Clube_do_Remo.svg.png',
 }
 
 @st.cache_data
