@@ -7,7 +7,7 @@ import os
 st.set_page_config(layout="wide", page_title="🏆 Visão Ranking - Classificação Detalhada")
 
 # --- Variáveis Globais ---
-FILE_PATH = 'df.xlsx' 
+FILE_PATH = 'df_final.xlsx' 
 
 TEAM_LOGOS = {
     'Fortaleza Ec Saf': 'https://upload.wikimedia.org/wikipedia/commons/e/e9/Fortaleza_EC_2018.png',
