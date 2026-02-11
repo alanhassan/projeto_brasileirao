@@ -51,7 +51,7 @@ def load_data(file_path):
 def calculate_team_metrics(df, team_name, selected_year, local_filter=None):
     """Calcula as métricas filtrando por Time, Ano e Local."""
     # Filtro Primário: Time e Ano
-    df_team = df[(df['Time1'] == team_name) & (df['Ano'] == selected_year)].copy() 
+    df_team = df[(df['Time1'] == team_name) & (df['ano'] == selected_year)].copy() 
     
     df_team.drop_duplicates(subset=['Ordem_Jogo'], keep='first', inplace=True) 
     
@@ -142,7 +142,7 @@ with col2:
     local_filter = {'Geral': None, 'Casa': 'C', 'Fora': 'F'}[local_display]
 
 with col3:
-    all_years = sorted(df['Ano'].unique().tolist(), reverse=True)
+    all_years = sorted(df['ano'].unique().tolist(), reverse=True)
     selected_year = st.selectbox("Ano:", all_years)
 
 # Processamento do Ranking
