@@ -9,7 +9,6 @@ st.set_page_config(layout="wide", page_title="⚔️ Duelo Times - Análise Comp
 # --- Variáveis Globais ---
 FILE_PATH = 'df_final.xlsx' 
 
-# Dicionário de Logos dos Times
 TEAM_LOGOS = {
     'Fortaleza Ec': 'https://upload.wikimedia.org/wikipedia/commons/thumb/6/6d/Fortaleza_Esporte_Clube_logo.png/640px-Fortaleza_Esporte_Clube_logo.png',
     'Juventude': 'https://upload.wikimedia.org/wikipedia/de/c/cd/Juventude_logo.svg',
@@ -40,7 +39,7 @@ TEAM_LOGOS = {
 @st.cache_data
 def load_data(file_path):
     if not os.path.exists(file_path):
-        st.error(f"Erro: O arquivo não foi encontrado: `{file_path}`.")
+        st.error(f"Erro: Arquivo não encontrado: `{file_path}`.")
         return pd.DataFrame() 
     try:
         df = pd.read_excel(file_path)
@@ -48,7 +47,7 @@ def load_data(file_path):
         df['Posicao_Jogo'] = df['Posicao_Jogo'].astype(int)
         return df
     except Exception as e:
-        st.error(f"Erro ao carregar os dados: {e}")
+        st.error(f"Erro ao processar Excel: {e}")
         return pd.DataFrame()
 
 def get_recent_performance(df, team_name, local_filter=None, n_games=3):
@@ -56,8 +55,8 @@ def get_recent_performance(df, team_name, local_filter=None, n_games=3):
     df_team.drop_duplicates(subset=['Ordem_Jogo'], keep='first', inplace=True)
     if local_filter:
         df_team = df_team[df_team['Local'] == local_filter]
-    
     df_recent = df_team.sort_values(by='Ordem_Jogo', ascending=False).head(n_games)
+
     if df_recent.empty:
         return {'V': 0, 'E': 0, 'D': 0, 'P': 0, 'AP': 0.0, 'Results': []}
 
@@ -65,12 +64,13 @@ def get_recent_performance(df, team_name, local_filter=None, n_games=3):
     results_count = df_recent['Resultado'].value_counts().to_dict()
     victories = results_count.get('V', 0)
     draws = results_count.get('E', 0)
-    defeats = results_count.get('D', 0)
     total_points = (victories * 3) + (draws * 1)
     aproveitamento = (total_points / (total_games * 3)) * 100 if total_games > 0 else 0
-    results_list = df_recent['Resultado'].tolist()
-
-    return {'V': victories, 'E': draws, 'D': defeats, 'P': total_points, 'AP': aproveitamento, 'Results': results_list}
+    
+    return {
+        'V': victories, 'E': draws, 'D': results_count.get('D', 0),
+        'P': total_points, 'AP': aproveitamento, 'Results': df_recent['Resultado'].tolist()
+    }
 
 def calculate_team_metrics(df, team_name, local_filter=None):
     df_team = df[(df['Time1'] == team_name)].copy() 
@@ -85,31 +85,28 @@ def calculate_team_metrics(df, team_name, local_filter=None):
         df_team = df_team[df_team['Local'] == local_filter]
 
     if df_team.empty:
-        return {'P': 0, 'J': 0, 'V': 0, 'E': 0, 'D': 0, 'GM': 0, 'GC': 0, 'SG': 0, 'AP': 0.0, 'GPJ': 0.0, 'PPJ': 0.0, 'RECENT': {'V':0,'E':0,'D':0,'P':0,'AP':0.0,'Results':[]}}
+        return {'P': 0, 'J': 0, 'V': 0, 'E': 0, 'D': 0, 'GM': 0, 'GC': 0, 'SG': 0, 'AP': 0.0, 'GPJ': 0.0, 'PPJ': 0.0, 'RECENT': get_recent_performance(df, team_name, local_filter)}
 
     total_games = len(df_team)
     total_points = df_team['Pontos_Jogo'].sum()
     total_gm = df_team['GS'].sum()
-    total_gc = df_team['GC'].sum()
-    aproveitamento = (total_points / (total_games * 3)) * 100
-    gols_por_jogo = total_gm / total_games
-    pontos_por_jogo = total_points / total_games
     results_count = df_team['Resultado'].value_counts().to_dict()
-
+    
     return {
         'P': total_points, 'J': total_games, 'V': results_count.get('V', 0),
         'E': results_count.get('E', 0), 'D': results_count.get('D', 0),
-        'GM': total_gm, 'GC': total_gc, 'SG': df_team['Saldo_Jogo'].sum(),
-        'AP': aproveitamento, 'GPJ': gols_por_jogo, 'PPJ': pontos_por_jogo,
+        'GM': total_gm, 'GC': df_team['GC'].sum(), 'SG': df_team['Saldo_Jogo'].sum(),
+        'AP': (total_points / (total_games * 3)) * 100,
+        'GPJ': total_gm / total_games, 'PPJ': total_points / total_games,
         'RECENT': get_recent_performance(df, team_name, local_filter)
     }
 
 def create_ranking_dataframe(df, all_teams):
     ranking_list = []
     for team in all_teams:
-        m = calculate_team_metrics(df, team)
-        m['Time'] = team
-        ranking_list.append(m)
+        metrics = calculate_team_metrics(df, team)
+        metrics['Time'] = team
+        ranking_list.append(metrics)
     ranking_df = pd.DataFrame(ranking_list)
     ranking_df = ranking_df.sort_values(by=['P', 'V', 'SG', 'GM'], ascending=False).reset_index(drop=True)
     ranking_df.index = ranking_df.index + 1
@@ -128,90 +125,96 @@ def display_team_header(team_name, role):
         <hr style="margin-top: 0; margin-bottom: 20px;">
     """, unsafe_allow_html=True)
 
-def display_metrics(metrics, current_pos, df_h2h_historico, team_name):
+def display_metrics(metrics, current_pos, df_head_to_head, team_name):
     if metrics['J'] == 0:
-        st.warning("O time não possui jogos no ano e local selecionados.")
-    else:
-        col1, col2 = st.columns(2)
-        with col1:
-            st.metric(label="Colocação Atual (Geral)", value=current_pos)
-            st.metric(label=f"Aproveitamento ({metrics['J']} J)", value=f"{metrics['AP']:.1f}%")
-        with col2:
-            st.metric(label="GP / Jogo", value=f"{metrics['GPJ']:.1f}")
-            st.metric(label="Saldo de Gols", value=f"{metrics['SG']}")
+        st.warning("Sem jogos no filtro selecionado.")
+        return
 
-        st.markdown("---")
-        recent = metrics['RECENT']
-        st.markdown(f"#### Desempenho Recente (Últimos {len(recent['Results'])} J):")
-        res_colors = {'V': "#28a745", 'E': "#6c757d", 'D': "#dc3545"}
-        results_html = " ".join([f'<span style="color: {res_colors.get(r, "#000")}; font-size: 20px;">\u25CF</span>' for r in recent['Results'][::-1]])
-        st.markdown(f"{results_html} ({recent['AP']:.1f}% AP)", unsafe_allow_html=True)
+    col1, col2 = st.columns(2)
+    with col1:
+        st.metric(label="Colocação Atual (No Ano)", value=current_pos)
+        st.metric(label=f"Aproveitamento ({metrics['J']} J)", value=f"{metrics['AP']:.1f}%")
+        st.metric(label="Pontos por Jogo (PPJ)", value=f"{metrics['PPJ']:.1f}")
+    with col2:
+        st.metric(label="GM / Jogo", value=f"{metrics['GPJ']:.1f}")
+        st.metric(label="GC / Jogo", value=f"{(metrics['GC']/metrics['J']):.1f}")
+        st.metric(label="Saldo de Gols (SG)", value=f"{metrics['SG']}")
+
+    st.markdown("#### Resultados (V/E/D) no Local:")
+    st.markdown(f"""<span style="color:#28a745;"><b>{metrics['V']} V</b></span>, <b>{metrics['E']} E</b>, <span style="color:#dc3545;"><b>{metrics['D']} D</b></span>""", unsafe_allow_html=True)
 
     st.markdown("---")
-    st.markdown("#### Histórico Geral Confronto Direto:")
-    if not df_h2h_historico.empty:
-        for _, row in df_h2h_historico.iterrows():
+    recent = metrics['RECENT']
+    st.markdown(f"#### Últimos {len(recent['Results'])} Jogos (No Local):")
+    result_emojis = {'V': '<span style="color:#28a745; font-size:20px;">●</span>', 'E': '<span style="color:#6c757d; font-size:20px;">●</span>', 'D': '<span style="color:#dc3545; font-size:20px;">●</span>'}
+    results_html = " ".join([result_emojis.get(r, '⚪') for r in recent['Results'][::-1]])
+    st.markdown(f"{results_html} (Antigo -> Recente)", unsafe_allow_html=True)
+
+    st.markdown("---")
+    st.markdown(f"#### Histórico Geral contra Adversário:")
+    if not df_head_to_head.empty:
+        for _, row in df_head_to_head.iterrows():
             if row['Time1'] == team_name:
                 score = f"{row['Gols1']} x {row['Gols2']}"
-                win, loss = row['Gols1'] > row['Gols2'], row['Gols1'] < row['Gols2']
+                res = 'V' if row['Gols1'] > row['Gols2'] else 'D' if row['Gols1'] < row['Gols2'] else 'E'
             else:
                 score = f"{row['Gols2']} x {row['Gols1']}"
-                win, loss = row['Gols2'] > row['Gols1'], row['Gols2'] < row['Gols1']
+                res = 'V' if row['Gols2'] > row['Gols1'] else 'D' if row['Gols2'] < row['Gols1'] else 'E'
             
-            color = "#28a745" if win else ("#dc3545" if loss else "#000")
-            st.markdown(f'<p style="color: {color}; margin:0;"><b>{score}</b> - Ano {row["ano"]} - Jogo {row["Ordem_Jogo"]}</p>', unsafe_allow_html=True)
+            color = "#28a745" if res == 'V' else "#dc3545" if res == 'D' else "#000000"
+            st.markdown(f'<span style="color:{color};"><b>{score}</b></span> - Jogo {row["Ordem_Jogo"]} ({row["Local"]}) - Ano {row["ano"]}', unsafe_allow_html=True)
     else:
-        st.caption("Sem confrontos históricos registrados.")
+        st.info("Nenhum confronto histórico encontrado.")
 
-# --- Execução Principal ---
+# --- Lógica Principal ---
+df_full = load_data(FILE_PATH)
+if df_full.empty:
+    st.stop()
 
-df_raw = load_data(FILE_PATH)
-if df_raw.empty: st.stop()
+# Filtro de Ano na Sidebar
+st.sidebar.header("Filtros de Visão")
+anos_disponiveis = sorted(df_full['ano'].unique(), reverse=True)
+ano_selecionado = st.sidebar.selectbox("Selecione o Ano para Estatísticas:", anos_disponiveis)
+
+# DataFrame Filtrado para Métricas
+df_filtrado = df_full[df_full['ano'] == ano_selecionado].copy()
+
+all_teams = sorted(pd.unique(df_full[['Time1', 'Time2']].values.ravel('K')))
+ranking_geral = create_ranking_dataframe(df_filtrado, all_teams)
 
 st.title("⚔️ Duelo Times: Análise Comparativa")
+st.markdown(f"**Analisando temporada: {ano_selecionado}** (Histórico de confrontos mostra todos os anos)")
+st.markdown("---")
 
-# FILTRO DE ANO (Apenas uma opção por vez)
-anos_disponiveis = sorted(df_raw['ano'].unique().tolist(), reverse=True)
-ano_selecionado = st.selectbox("📅 Selecione a Temporada para Estatísticas:", anos_disponiveis)
+col_t1, col_t2 = st.columns(2)
+team1_name = col_t1.selectbox("Time da Casa (Time 1):", all_teams, index=0)
+team2_name = col_t2.selectbox("Time Visitante (Time 2):", all_teams, index=1 if len(all_teams)>1 else 0)
 
-# Dados filtrados para estatísticas / Dados brutos para Histórico H2H
-df_estatisticas = df_raw[df_raw['ano'] == ano_selecionado].copy()
+# Cálculos (Usando DF Filtrado por ano)
+metrics_t1 = calculate_team_metrics(df_filtrado, team1_name, local_filter='C')
+pos_t1 = ranking_geral.loc[ranking_geral['Time'] == team1_name].index[0] if not ranking_geral[ranking_geral['Time'] == team1_name].empty else 'N/A'
 
-all_teams = sorted(pd.unique(df_raw[['Time1', 'Time2']].values.ravel('K')))
-ranking_geral = create_ranking_dataframe(df_estatisticas, all_teams)
+metrics_t2 = calculate_team_metrics(df_filtrado, team2_name, local_filter='F')
+pos_t2 = ranking_geral.loc[ranking_geral['Time'] == team2_name].index[0] if not ranking_geral[ranking_geral['Time'] == team2_name].empty else 'N/A'
 
-st.header("Selecione os Times")
-col_sel1, col_sel2 = st.columns(2)
-team1 = col_sel1.selectbox("Time da Casa:", all_teams, index=0)
-team2 = col_sel2.selectbox("Time Visitante:", all_teams, index=1 if len(all_teams) > 1 else 0)
-
-# Cálculos (Respeitam o Ano)
-m1 = calculate_team_metrics(df_estatisticas, team1, local_filter='C')
-m1['Time'] = team1
-m2 = calculate_team_metrics(df_estatisticas, team2, local_filter='F')
-m2['Time'] = team2
-
-pos1 = ranking_geral[ranking_geral['Time'] == team1].index[0] if team1 in ranking_geral['Time'].values else "N/A"
-pos2 = ranking_geral[ranking_geral['Time'] == team2].index[0] if team2 in ranking_geral['Time'].values else "N/A"
-
-# Confronto Direto (IGNORA O FILTRO DE ANO - Usa df_raw)
-df_h2h_total = df_raw[
-    ((df_raw['Time1'] == team1) & (df_raw['Time2'] == team2)) | 
-    ((df_raw['Time1'] == team2) & (df_raw['Time2'] == team1))
+# Histórico (Usando DF FULL - Ignora o filtro de ano)
+df_h2h_full = df_full[
+    ((df_full['Time1'] == team1_name) & (df_full['Time2'] == team2_name)) |
+    ((df_full['Time1'] == team2_name) & (df_full['Time2'] == team1_name))
 ].sort_values(by=['ano', 'Ordem_Jogo'], ascending=False)
 
-st.markdown("---")
-c_t1, c_vs, c_t2 = st.columns([2, 0.5, 2])
+# Exibição
+col_disp1, col_vs, col_disp2 = st.columns([2, 0.5, 2])
 
-with c_t1:
-    display_team_header(team1, "Mandante")
-    display_metrics(m1, pos1, df_h2h_total, team1)
+with col_disp1:
+    display_team_header(team1_name, "Mandante")
+    display_metrics(metrics_t1, pos_t1, df_h2h_full, team1_name)
 
-with c_vs:
+with col_vs:
     st.markdown("<h1 style='text-align: center; margin-top: 100px;'>VS</h1>", unsafe_allow_html=True)
 
-with c_t2:
-    display_team_header(team2, "Visitante")
-    display_metrics(m2, pos2, df_h2h_total, team2)
+with col_disp2:
+    display_team_header(team2_name, "Visitante")
+    display_metrics(metrics_t2, pos_t2, df_h2h_full, team2_name)
 
 st.markdown("<br><hr><p style='text-align: center; color: gray;'>Dashboard de Análise de Performance | Autoria de Alan W. Hassan</p>", unsafe_allow_html=True)
