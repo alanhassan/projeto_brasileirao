@@ -323,24 +323,22 @@ def display_metrics(metrics, current_pos, df_head_to_head):
 # --- Lógica Principal da Página ---
 
 # 1. Carregamento e Verificação de Dados
-df = load_data(FILE_PATH)
-
-if df.empty:
-    st.warning("Não foi possível carregar os dados. Verifique o caminho do arquivo.")
-    st.stop()
-    
-all_teams = pd.unique(df[['Time1', 'Time2']].values.ravel('K'))
-all_teams.sort()
-
-# Prepara o Ranking Geral para Colocação Atual
-ranking_geral = create_ranking_dataframe(df, all_teams)
-
+df_raw = load_data(FILE_PATH)
+if df_raw.empty: st.stop()
 
 st.title("⚔️ Duelo Times: Análise Comparativa")
 st.markdown("---")
 
+anos_disponiveis = sorted(df_raw['ano'].unique().tolist(), reverse=True)
+ano_selecionado = st.selectbox("📅 Selecione a Temporada para Estatísticas:", anos_disponiveis)
+
+df_estatisticas = df_raw[df_raw['ano'] == ano_selecionado].copy()
+
+all_teams = sorted(pd.unique(df_raw[['Time1', 'Time2']].values.ravel('K')))
+ranking_geral = create_ranking_dataframe(df_estatisticas, all_teams)
+
 # 2. Seleção dos Times
-st.header("Selecione os Times para o Duelo")
+st.header("Selecione os Times")
 col_t1, col_t2 = st.columns(2)
 
 # Time 1 (Casa)
@@ -364,18 +362,18 @@ st.markdown("---")
 # 3. Cálculo das Métricas e Preparação dos Dados
 
 # Métricas Time 1 (Casa): Apenas jogos em CASA ('C')
-metrics_t1_home = calculate_team_metrics(df, team1_name, local_filter='C')
+metrics_t1_home = calculate_team_metrics(df_estatisticas, team1_name, local_filter='C')
 metrics_t1_home['Time'] = team1_name # <-- ADICIONE A CHAVE 'Time' AQUI
 pos_t1 = ranking_geral.loc[ranking_geral['Time'] == team1_name].index[0] if not ranking_geral[ranking_geral['Time'] == team1_name].empty else 'N/A'
 
 # Métricas Time 2 (Fora): Apenas jogos FORA ('F')
-metrics_t2_away = calculate_team_metrics(df, team2_name, local_filter='F')
+metrics_t2_away = calculate_team_metrics(df_estatisticas, team2_name, local_filter='F')
 metrics_t2_away['Time'] = team2_name # <-- ADICIONE A CHAVE 'Time' AQUI
 pos_t2 = ranking_geral.loc[ranking_geral['Time'] == team2_name].index[0] if not ranking_geral[ranking_geral['Time'] == team2_name].empty else 'N/A'
 
 # Histórico de Jogos entre os dois times
-df_head_to_head = df[
-    ((df['Time1'] == team1_name) & (df['Time2'] == team2_name)) 
+df_head_to_head = df_raw[
+    ((df_raw['Time1'] == team1_name) & (df_raw['Time2'] == team2_name)) 
     # | ((df['Time1'] == team2_name) & (df['Time2'] == team1_name))
 ].sort_values(by='Ordem_Jogo', ascending=False)
 
